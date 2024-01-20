@@ -42,7 +42,7 @@ int main()
     
 
     SN::Socket client = SN::Socket("localhost", "999");
-    client.CreateSocketAndBind();
+    client.CreateSocket();
     if(client.m_socket == INVALID_SOCKET)
     {
         WSACleanup();
@@ -63,7 +63,7 @@ int main()
 
 
     
-    std::thread recv_thread(&SN::Socket::ReciveLoop, &client, client.m_socket, "");
+    std::thread recv_thread(&SN::Socket::ReciveLoop, &client, client.m_socket);
     std::string input = "";
     while(input != "z")
     {

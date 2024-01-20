@@ -10,4 +10,7 @@ project(sockets)
 
 # Executable
 add_executable(client client.cpp socket.cpp)
+target_link_libraries(client Ws2_32)
+
 add_executable(server server.cpp socket.cpp)
+target_link_libraries(server Ws2_32)
