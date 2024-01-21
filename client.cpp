@@ -13,11 +13,26 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <stdio.h>
+#include <csignal>
 
 #pragma comment(lib, "Ws2_32.lib")
 
+SN::Socket client = SN::Socket("localhost", "999");
+
+void signalHandler(int signum)
+{
+    std::cout << "Interrupt signal (" << signum << ") received." << std::endl;
+    closesocket(client.m_socket);
+    WSACleanup();
+    exit(signum); 
+    return; 
+}
+
+
 int main()
 {
+    signal(SIGINT, signalHandler);  
+
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2,2), &wsaData);
     if(result == 0)
@@ -41,7 +56,6 @@ int main()
     }
     
 
-    SN::Socket client = SN::Socket("localhost", "999");
     client.CreateSocket();
     if(client.m_socket == INVALID_SOCKET)
     {
@@ -68,9 +82,12 @@ int main()
     while(input != "z")
     {
         getline(std::cin, input);
+        if (std::cin.fail() || std::cin.eof()) 
+        {
+            std::cin.clear(); // reset cin state
+            break;
+        }
         client.Send(client.m_socket ,input.c_str());
     }
-
-    Sleep(100000);
     WSACleanup();
 }

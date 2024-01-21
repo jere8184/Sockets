@@ -15,6 +15,7 @@
 
 void SN::Server::RegisterUsers()
 {
+    int result = 0;
     while(true)
     {
         Listen();
@@ -24,18 +25,18 @@ void SN::Server::RegisterUsers()
             SOCKET accepted_socket = std::get<1>(return_tuple);
             Send(accepted_socket, "what is your name?");
             std::string name;
-            int result = Poll(accepted_socket, POLLRDNORM, -1);
+            result = Poll(accepted_socket, POLLRDNORM, -1);
             if(result == 1)
             {
                 name = std::get<1>(Recive(accepted_socket));
                 std::cout << std::endl << name << " registered" << std::endl;
+                std::tuple<SOCKET, std::string> user = {accepted_socket, name};
+                m_users.emplace(user);
             }
-            else if(result == SOCKET_ERROR)
+            else if(result == SOCKET_ERROR || result == POLLHUP)
             {
                 std::cerr << "RegisterUsers() failed" << std::endl;
             }
-            std::tuple<SOCKET, std::string> user = {accepted_socket, name};
-            m_users.emplace(user);
         }
     }
 }
@@ -60,12 +61,7 @@ void SN::Server::ReciveFromUsersLoop()
         {
             std::string name = std::get<1>(user);
             SOCKET accepted_socket = std::get<0>(user);
-
-            WSAPOLLFD connected_socket = {};
-            connected_socket.fd = accepted_socket;
-            connected_socket.events = POLLRDNORM;
-            int result = WSAPoll(&connected_socket, 1, 1000);
-
+            int result = Poll(accepted_socket, POLLRDNORM, 1000);
             if(result == 1)
             {
                 auto return_tuple = Recive(accepted_socket);
@@ -73,26 +69,13 @@ void SN::Server::ReciveFromUsersLoop()
                 std::cout << name << ": " << message << std::endl;
                 BroadcastMessage(name, std::get<1>(return_tuple));
             }
+            if(result == POLLHUP)
+            {
+                std::cout << name << " has disconnected" << std::endl;
+                m_users.erase(user);
+            }
         }
     }
-
-
-    /*if(!from.empty())
-    {
-        from = " from " + from ;
-    }
-    char buff[100] = {};
-    int result = 0;
-    while(result != SOCKET_ERROR)
-    {
-        result = recv(socket, buff, 100, 0);
-        if(result == SOCKET_ERROR)
-        {
-            printf("recv failed: %d\n", WSAGetLastError());
-        }
-        std::cout << std::endl << "message recived" << from << ": " << buff << std::endl;
-        memset(buff, 0, sizeof(buff));
-    }*/
 }
 
 
@@ -146,19 +129,6 @@ int main()
 
         std::thread recv_thread(&SN::Server::ReciveFromUsersLoop, &server);
 
-
-        //std::thread recv_thread(&SN::Socket::ReciveLoop, &server, accepted_socket, name);
-        //int result = 0;
-        //while(true)
-        //{
-            //std::tuple<int, std::string> return_tuple = server.Recive(server.m_accepted_socket);
-            //result = std::get<0>(return_tuple);
-            //std::string message = ""; //std::get<1>(return_tuple);
-            //std::cout << message << std::endl;
-            //std::string response = "echo: " + message;
-            //std::cin >> message;
-            //server.Send(server.m_accepted_socket, message.c_str());
-        //}
         recv_thread.join();
         printf("1goodbye\n");
     }

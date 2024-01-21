@@ -11,19 +11,17 @@ int SN::Socket::Poll(SOCKET& socket, ULONG option, int time_out)
     poll_socket.fd = socket;
     poll_socket.events = option;
     int result = WSAPoll(&poll_socket, 1, time_out);
-
-    if(result == SOCKET_ERROR)
+    if(poll_socket.revents & POLLHUP)
+    {
+        return POLLHUP;
+    }
+    else if(result == SOCKET_ERROR)
     {
         std::cout << "WSAPoll: " << WSAGetLastError() << std::endl;
         return SOCKET_ERROR;
     }
     return result;
 }
-
-
-
-
-
 
 int SN::Socket::Listen()
 {
@@ -108,19 +106,17 @@ int SN::Socket::Connect(const char* target_name_or_ip, const char* target_servic
     {
         std::cout << "getaddrinfo() failed and returned: " << result <<  " WSAGetLastError() returned: " << WSAGetLastError() << std::endl;
     }
-    //GetAddressInfo(target_name_or_ip, target_service_or_port, addrinfo);
 
 
     if(addrinfo != nullptr)
     {
-        if(connect(m_socket, addrinfo->ai_addr, addrinfo->ai_addrlen) != 0)
+        if(connect(m_socket, addrinfo->ai_addr, addrinfo->ai_addrlen) == SOCKET_ERROR)
         {
             printf("connect failed: %d\n", WSAGetLastError());
+            return SOCKET_ERROR;
         }
-        //freeaddrinfo(addrinfo);
-        return 0;
     }
-    return 1;
+    return 0;
 }
 
 addrinfo* SN::Socket::GetAddressInfo(const char* name_or_ip, const char* service_or_port, addrinfo*& address_info)
