@@ -1,21 +1,9 @@
-#include <iostream>
+
 #include "socket.hpp"
-#include <thread> 
 
-
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
-#include <stdio.h>
+#include <thread>
 #include <csignal>
-
-#pragma comment(lib, "Ws2_32.lib")
+#include <iostream>
 
 SN::Socket client = SN::Socket("localhost", "999");
 
@@ -77,17 +65,11 @@ int main()
 
 
     
-    std::thread recv_thread(&SN::Socket::ReciveLoop, &client, client.m_socket);
-    std::string input = "";
-    while(input != "z")
-    {
-        getline(std::cin, input);
-        if (std::cin.fail() || std::cin.eof()) 
-        {
-            std::cin.clear(); // reset cin state
-            break;
-        }
-        client.Send(client.m_socket ,input.c_str());
-    }
+    std::thread recv_thread(&SN::Socket::ReciveLoop, &client);
+    std::thread send_thread(&SN::Socket::SendLoop, &client);
+
+    send_thread.join();
+    recv_thread.join();
+
     WSACleanup();
 }

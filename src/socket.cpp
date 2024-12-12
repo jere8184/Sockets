@@ -1,11 +1,12 @@
 #include "socket.hpp"
+
 #include <ws2tcpip.h>
 #include <iostream>
 
 
 SN::Socket::Socket(const char* name_or_ip, const char* service_or_port) : m_name_or_ip(name_or_ip), m_service_or_port(service_or_port){}
 
-int SN::Socket::Poll(SOCKET& socket, ULONG option, int time_out)
+int SN::Socket::Poll(SOCKET socket, ULONG option, int time_out)
 {
     WSAPOLLFD poll_socket = {};
     poll_socket.fd = socket;
@@ -35,7 +36,7 @@ int SN::Socket::Listen()
     return 0;
 }
 
-std::tuple<int, SOCKET> SN::Socket::Accept()
+std::pair<int, SOCKET> SN::Socket::Accept()
 {
     SOCKET connected_socket = INVALID_SOCKET;
     connected_socket = accept(m_socket, NULL, NULL);
@@ -68,6 +69,7 @@ int SN::Socket::CreateSocket()
 int SN::Socket::BindSocket()
 {
     int result = bind(m_socket, m_address_info->ai_addr, m_address_info->ai_addrlen);
+    std::cout << m_address_info->ai_addr << std::endl;
     freeaddrinfo(m_address_info);
 
     if(result != 0)
@@ -138,9 +140,9 @@ addrinfo* SN::Socket::GetAddressInfo(const char* name_or_ip, const char* service
     return address_info;
 }
 
-int SN::Socket::Send(SOCKET socket, const char* message)
+int SN::Socket::Send(SOCKET sender, const char* message)
 {
-    int result = send(socket, message, strlen(message) + 1, 0);
+    int result = send(sender, message, strlen(message) + 1, 0);
     if(result == SOCKET_ERROR)
     {
         printf("send failed: %d\n", WSAGetLastError());
@@ -149,10 +151,10 @@ int SN::Socket::Send(SOCKET socket, const char* message)
 }
 
 
-std::tuple<int, std::string> SN::Socket::Recive(SOCKET socket)
+std::pair<int, std::string> SN::Socket::Recive(SOCKET sender)
 {
     char buff[100] = {};
-    int result = recv(socket, buff, 100, 0);
+    int result = recv(sender, buff, 100, 0);
 
     if(result == SOCKET_ERROR)
     {
@@ -162,17 +164,32 @@ std::tuple<int, std::string> SN::Socket::Recive(SOCKET socket)
     return {result, std::string(buff)};
 }
 
-void SN::Socket::ReciveLoop(SOCKET socket)
+void SN::Socket::ReciveLoop()
 {
     char buff[100] = {};
     int result = 0;
     while(result != SOCKET_ERROR)
     {
-        result = recv(socket, buff, 100, 0);
+        result = recv(this->m_socket, buff, 100, 0);
         if(result == SOCKET_ERROR)
         {
             printf("recv failed: %d\n", WSAGetLastError());
         }
         std::cout << std::endl << buff << std::endl;
+    }
+}
+
+void SN::Socket::SendLoop()
+{
+    std::string input = "";
+    while(input != "z")
+    {
+        getline(std::cin, input);
+        if (std::cin.fail() || std::cin.eof()) 
+        {
+            std::cin.clear(); // reset cin state
+            break;
+        }
+        this->Send(this->m_socket ,input.c_str());
     }
 }

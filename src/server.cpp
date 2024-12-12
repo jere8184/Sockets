@@ -1,36 +1,25 @@
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
-#include <stdio.h>
-
-#include <Ws2spi.h>
-
-#pragma comment(lib, "Ws2_32.lib")
 #include "server.hpp"
+
+#include <iostream>
+#include <thread>
+
 
 void SN::Server::RegisterUsers()
 {
-    int result = 0;
     while(true)
     {
-        Listen();
+        this->Listen();
         if(Poll(m_socket, POLLRDNORM, 1) == 1)
         {
-            auto return_tuple = Accept();
-            SOCKET accepted_socket = std::get<1>(return_tuple);
+            auto [result, accepted_socket] = Accept();
             Send(accepted_socket, "what is your name?");
-            std::string name;
             result = Poll(accepted_socket, POLLRDNORM, -1);
             if(result == 1)
             {
-                name = std::get<1>(Recive(accepted_socket));
+                std::string name = Recive(accepted_socket).second;
                 std::cout << std::endl << name << " registered" << std::endl;
-                std::tuple<SOCKET, std::string> user = {accepted_socket, name};
+                std::pair<SOCKET, std::string> user = {accepted_socket, name};
                 m_users.emplace(user);
             }
             else if(result == SOCKET_ERROR || result == POLLHUP)
@@ -46,9 +35,9 @@ void SN::Server::BroadcastMessage(std::string sender, std::string message)
     message = sender + ": " + message;
     for(auto user : m_users)
     {
-        if(sender != std::get<1>(user))
+        if(sender != user.second)
         {
-            Send(std::get<0>(user) ,message.c_str());
+            Send(user.first ,message.c_str());
         }
     }
 }
@@ -64,10 +53,9 @@ void SN::Server::ReciveFromUsersLoop()
             int result = Poll(accepted_socket, POLLRDNORM, 1000);
             if(result == 1)
             {
-                auto return_tuple = Recive(accepted_socket);
-                std::string message = std::get<1>(return_tuple);
+                auto [result, message] = Recive(accepted_socket);
                 std::cout << name << ": " << message << std::endl;
-                BroadcastMessage(name, std::get<1>(return_tuple));
+                BroadcastMessage(name, message);
             }
             if(result == POLLHUP)
             {
@@ -79,9 +67,18 @@ void SN::Server::ReciveFromUsersLoop()
 }
 
 
-SN::Server::Server(const char* name_or_ip, const char* service_or_port): Socket(name_or_ip, service_or_port)
+SN::Server::Server(const char* name_or_ip, const char* service_or_port): Socket(name_or_ip, service_or_port){}
+
+
+SN::Socket server = SN::Socket("localhost", "999");
+
+void signalHandler(int signum)
 {
-    
+    std::cout << "Interrupt signal (" << signum << ") received." << std::endl;
+    closesocket(server.m_socket);
+    WSACleanup();
+    exit(signum); 
+    return; 
 }
 
 int main()
@@ -117,6 +114,7 @@ int main()
     if(server.m_socket != INVALID_SOCKET)
     {
         std::thread register_thread(&SN::Server::RegisterUsers, &server);
+
         for(int count = 0; count < 200; count++)
         {
             Sleep(1000);
@@ -128,9 +126,8 @@ int main()
         }
 
         std::thread recv_thread(&SN::Server::ReciveFromUsersLoop, &server);
-
         recv_thread.join();
-        printf("1goodbye\n");
+        register_thread.join();
     }
     printf("goodbye\n");
 
