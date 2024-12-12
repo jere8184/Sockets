@@ -174,6 +174,5 @@ void SN::Socket::ReciveLoop(SOCKET socket)
             printf("recv failed: %d\n", WSAGetLastError());
         }
         std::cout << std::endl << buff << std::endl;
-        memset(buff, 0, sizeof(buff));
     }
 }
