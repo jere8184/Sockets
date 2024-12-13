@@ -12,7 +12,7 @@ namespace SN
     {
 
         public:
-            Socket(const char* name_or_ip = "localhost", const char* service_or_port = "888");
+            Socket(const char* name_or_ip = nullptr, const char* service_or_port = nullptr);
             SOCKET m_socket = INVALID_SOCKET;
             int Poll(SOCKET socket, ULONG  option, int time_out);
             int Listen();
@@ -25,6 +25,9 @@ namespace SN
             std::pair<int, std::string> Recive(SOCKET sender);
             void ReciveLoop();
             void SendLoop();
+            void CloseSocket();
+            static bool InitWinSock();
+            static void CleanUp();
 
 
         private:

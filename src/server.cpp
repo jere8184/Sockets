@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <thread>
+#include <memory>
 
 
 void SN::Server::RegisterUsers()
@@ -70,43 +71,35 @@ void SN::Server::ReciveFromUsersLoop()
 SN::Server::Server(const char* name_or_ip, const char* service_or_port): Socket(name_or_ip, service_or_port){}
 
 
-SN::Socket server = SN::Socket("localhost", "999");
+SN::Socket* server_ptr = nullptr;
 
 void signalHandler(int signum)
 {
     std::cout << "Interrupt signal (" << signum << ") received." << std::endl;
-    closesocket(server.m_socket);
-    WSACleanup();
+    if(server_ptr)
+        server_ptr->CloseSocket();
+    SN::Socket::CleanUp();
     exit(signum); 
     return; 
 }
 
-int main()
+int main(int argc, const char** argv)
 {
-    WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if(result == 0)
+    if(argc != 2)
     {
-        std::cout << "winsock intialised: success" << std::endl; 
-    }
-    else
-    {
-        std::cout << "winsock intialised: failed with error code " << result << std::endl; 
+        std::cerr << "server: expects two arguments (host and port)";
     }
 
-    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) 
+
+    if(!SN::Socket::InitWinSock())
     {
-        printf("Could not find a usable version of Winsock.dll\n");
-        WSACleanup();
         return 1;
     }
-    else
-    {
-        printf("The Winsock 2.2 dll was found okay\n");
-    }
-    
 
-    SN::Server server = SN::Server("localhost", "888");
+    SN::Server server = SN::Server(argv[1], argv[2]);
+
+    server_ptr = &server;
+
     server.CreateSocket();
     server.BindSocket();
     server.EnableNonBlocking();
@@ -129,7 +122,7 @@ int main()
         recv_thread.join();
         register_thread.join();
     }
+    server_ptr = nullptr;
     printf("goodbye\n");
-
-    WSACleanup();
+    SN::Socket::CleanUp();
 }

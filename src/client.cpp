@@ -5,65 +5,48 @@
 #include <csignal>
 #include <iostream>
 
-SN::Socket client = SN::Socket("localhost", "999");
+SN::Socket* client_ptr;
 
 void signalHandler(int signum)
 {
     std::cout << "Interrupt signal (" << signum << ") received." << std::endl;
-    closesocket(client.m_socket);
-    WSACleanup();
+    client_ptr->CloseSocket();
+    SN::Socket::CleanUp();
     exit(signum); 
     return; 
 }
 
 
-int main()
+int main(int argc, const char** argv)
 {
+    if(argc != 2)
+    {
+        std::cerr << "client: expects two arguments (server hostname/IP and sever port number)";
+    }
+    
     signal(SIGINT, signalHandler);  
 
-    WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if(result == 0)
+    if(!SN::Socket::InitWinSock())
     {
-        std::cout << "winsock intialised: success" << std::endl; 
-    }
-    else
-    {
-        std::cout << "winsock intialised: failed with error code " << result << std::endl; 
-    }
-
-    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) 
-    {
-        printf("Could not find a usable version of Winsock.dll\n");
-        WSACleanup();
         return 1;
     }
-    else
-    {
-        printf("The Winsock 2.2 dll was found okay\n");
-    }
+    
+    SN::Socket client("localhost");
+    client_ptr = &client;
     
 
     client.CreateSocket();
     if(client.m_socket == INVALID_SOCKET)
     {
-        WSACleanup();
+        SN::Socket::CleanUp();
         return 1;
     }
 
-    if(client.Connect("localhost", "888") != 0)
+    if(client.Connect(argv[1], argv[2]) != 0)
     {
-        WSACleanup();
+        SN::Socket::CleanUp();
         return 1;
     }
-
-    //if(client.Send(client.m_socket, "hello world") == SOCKET_ERROR)
-    //{
-    //    WSACleanup();
-    //    return 1;
-    //}
-
-
     
     std::thread recv_thread(&SN::Socket::ReciveLoop, &client);
     std::thread send_thread(&SN::Socket::SendLoop, &client);
@@ -71,5 +54,6 @@ int main()
     send_thread.join();
     recv_thread.join();
 
-    WSACleanup();
+    SN::Socket::CleanUp();
+    client_ptr = nullptr;
 }

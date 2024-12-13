@@ -54,7 +54,7 @@ int SN::Socket::CreateSocket()
     GetAddressInfo(m_name_or_ip, m_service_or_port, m_address_info);
 
     SOCKET new_socket = INVALID_SOCKET;
-    new_socket = socket(m_address_info->ai_family, m_address_info->ai_socktype, m_address_info->ai_protocol);
+    new_socket = socket(m_address_info->ai_family, m_address_info->ai_socktype, this->m_address_info->ai_protocol);
 
     if (new_socket == INVALID_SOCKET) 
     {
@@ -192,4 +192,40 @@ void SN::Socket::SendLoop()
         }
         this->Send(this->m_socket ,input.c_str());
     }
+}
+
+void SN::Socket::CloseSocket()
+{
+    closesocket(this->m_socket);
+}
+
+bool SN::Socket::InitWinSock()
+{
+    WSADATA wsaData;
+    int result = WSAStartup(MAKEWORD(2,2), &wsaData);
+    if(result == 0)
+    {
+        std::cout << "winsock intialised: success" << std::endl; 
+    }
+    else
+    {
+        std::cout << "winsock intialised: failed with error code " << result << std::endl;
+    }
+
+    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) 
+    {
+        printf("Could not find a usable version of Winsock.dll\n");
+        WSACleanup();
+        return false;
+    }
+    else
+    {
+        printf("The Winsock 2.2 dll was found okay\n");
+        return true;
+    }
+}
+
+void SN::Socket::CleanUp()
+{
+    WSACleanup();
 }
