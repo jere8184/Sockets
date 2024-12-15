@@ -5,6 +5,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+const int INVALID_SOCKET = -1;
+const int SOCKET_ERROR = -1;
+
 #else
 
 #define fcntl ioctlsocket

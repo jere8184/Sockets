@@ -8,10 +8,7 @@
 #include <errno.h>
 #include <poll.h>
 
-
 using SOCKET = int;
-const int INVALID_SOCKET = -1;
-const int SOCKET_ERROR = -1;
 
 #else
 #define WIN32_LEAN_AND_MEAN
