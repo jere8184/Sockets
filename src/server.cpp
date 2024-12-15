@@ -20,7 +20,7 @@ void SN::Server::RegisterUsers()
                 std::cout << std::endl
                           << name << " registered" << std::endl;
                 std::pair<SOCKET, std::string> user = {accepted_socket, name};
-                m_users.emplace(user);
+                this->users.emplace(user);
             }
             else if (result == SOCKET_ERROR || result == POLLHUP)
             {
@@ -33,7 +33,7 @@ void SN::Server::RegisterUsers()
 void SN::Server::BroadcastMessage(std::string sender, std::string message)
 {
     message = sender + ": " + message;
-    for (auto user : m_users)
+    for (auto user : this->users)
     {
         if (sender != user.second)
         {
@@ -46,7 +46,7 @@ void SN::Server::ReciveFromUsersLoop()
 {
     while (true)
     {
-        for (auto user : m_users)
+        for (auto user : this->users)
         {
             std::string name = std::get<1>(user);
             SOCKET accepted_socket = std::get<0>(user);
@@ -60,7 +60,7 @@ void SN::Server::ReciveFromUsersLoop()
             if (result == POLLHUP)
             {
                 std::cout << name << " has disconnected" << std::endl;
-                m_users.erase(user);
+                this->users.erase(user);
             }
         }
     }
@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             std::cout << "waiting for connection: " << count << std::endl;
-            if (!server.m_users.empty())
+            if (!server.GetUsers().empty())
             {
                 break;
             }

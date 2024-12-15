@@ -22,7 +22,7 @@
 
 
 
-SN::Socket::Socket(const char *name_or_ip, const char *service_or_port) : m_name_or_ip(name_or_ip), m_service_or_port(service_or_port) {}
+SN::Socket::Socket(const char *name_or_ip, const char *service_or_port) : name_or_ip(name_or_ip), service_or_port(service_or_port) {}
 
 int SN::Socket::Poll(SOCKET socket, unsigned long option, int time_out)
 {
@@ -74,15 +74,15 @@ std::pair<int, SOCKET> SN::Socket::Accept()
 
 int SN::Socket::CreateSocket()
 {
-    GetAddressInfo(m_name_or_ip, m_service_or_port, m_address_info);
+    GetAddressInfo(name_or_ip, service_or_port, address_info);
 
     SOCKET new_socket = INVALID_SOCKET;
-    new_socket = socket(m_address_info->ai_family, m_address_info->ai_socktype, this->m_address_info->ai_protocol);
+    new_socket = socket(this->address_info->ai_family, this->address_info->ai_socktype, this->address_info->ai_protocol);
 
     if (new_socket == INVALID_SOCKET)
     {
         std::cout << "socket() failed and GetLastError() returned: " << errno << std::endl;
-        freeaddrinfo(m_address_info);
+        freeaddrinfo(this->address_info);
         return 1;
     }
     m_socket = new_socket;
@@ -91,9 +91,9 @@ int SN::Socket::CreateSocket()
 
 int SN::Socket::BindSocket()
 {
-    int result = bind(m_socket, m_address_info->ai_addr, m_address_info->ai_addrlen);
-    std::cout << m_address_info->ai_addr << std::endl;
-    freeaddrinfo(m_address_info);
+    int result = bind(m_socket, this->address_info->ai_addr, this->address_info->ai_addrlen);
+    std::cout << this->address_info->ai_addr << std::endl;
+    freeaddrinfo(this->address_info);
 
     if (result != 0)
     {

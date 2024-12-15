@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <poll.h>
 
-
 using SOCKET = int;
 const int INVALID_SOCKET = -1;
 const int SOCKET_ERROR = -1;
@@ -48,9 +47,9 @@ namespace SN
         static void CleanUp();
 
     private:
-        const char *m_name_or_ip = nullptr;
-        const char *m_service_or_port = "";
+        const char *name_or_ip = nullptr;
+        const char *service_or_port = "";
         static addrinfo *GetAddressInfo(const char *name_or_ip, const char *service_or_port, addrinfo *&address_info);
-        addrinfo *m_address_info;
+        addrinfo *address_info;
     };
 };
