@@ -25,7 +25,7 @@ int main(int argc, const char **argv)
 
     signal(SIGINT, signalHandler);
 
-    if (!SN::Socket::InitWinSock())
+    if (!SN::Socket::Init())
     {
         return 1;
     }

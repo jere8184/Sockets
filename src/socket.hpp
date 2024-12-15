@@ -1,6 +1,25 @@
-#pragma once
 
+
+#ifndef MSWINDOWS
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netdb.h>
+#include <errno.h>
+#include <poll.h>
+
+
+using SOCKET = int;
+const int INVALID_SOCKET = -1;
+const int SOCKET_ERROR = -1;
+
+#else
+#define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
+#include <ws2tcpip.h>
+
+#endif
+
 
 #include <string>
 #include <vector>
@@ -13,7 +32,7 @@ namespace SN
     public:
         Socket(const char *name_or_ip = nullptr, const char *service_or_port = nullptr);
         SOCKET m_socket = INVALID_SOCKET;
-        int Poll(SOCKET socket, ULONG option, int time_out);
+        int Poll(SOCKET socket, unsigned long option, int time_out);
         int Listen();
         std::pair<int, SOCKET> Accept();
         int CreateSocket();
@@ -25,7 +44,7 @@ namespace SN
         void ReciveLoop();
         void SendLoop();
         void CloseSocket();
-        static bool InitWinSock();
+        static bool Init();
         static void CleanUp();
 
     private:

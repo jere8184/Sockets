@@ -1,5 +1,6 @@
 #include <set>
 #include <utility>
+#include <string>
 
 #include "socket.hpp"
 

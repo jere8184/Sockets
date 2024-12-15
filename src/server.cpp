@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <thread>
+#include <unistd.h>
 
 void SN::Server::RegisterUsers()
 {
@@ -82,12 +83,12 @@ void signalHandler(int signum)
 
 int main(int argc, const char **argv)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
         std::cerr << "server: expects two arguments (host and port)";
     }
 
-    if (!SN::Socket::InitWinSock())
+    if (!SN::Socket::Init())
     {
         return 1;
     }
@@ -106,7 +107,7 @@ int main(int argc, const char **argv)
 
         for (int count = 0; count < 200; count++)
         {
-            Sleep(1000);
+            sleep(1);
             std::cout << "waiting for connection: " << count << std::endl;
             if (!server.m_users.empty())
             {

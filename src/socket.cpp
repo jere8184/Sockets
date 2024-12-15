@@ -1,23 +1,42 @@
+
+
+#ifndef MSWINDOWS
+
+#include <sys/ioctl.h>
+#include <unistd.h>
+
+#else
+
+#define fcntl ioctlsocket
+#define poll WSAPOLL
+#define pollfd WSAPOLLFD
+#define ioctl ioctlsocket
+#define errno WSAGetLastError()
+#define close closesocket
+
+#endif
+
+#include <iostream>
+#include <string.h>
 #include "socket.hpp"
 
-#include <ws2tcpip.h>
-#include <iostream>
+
 
 SN::Socket::Socket(const char *name_or_ip, const char *service_or_port) : m_name_or_ip(name_or_ip), m_service_or_port(service_or_port) {}
 
-int SN::Socket::Poll(SOCKET socket, ULONG option, int time_out)
+int SN::Socket::Poll(SOCKET socket, unsigned long option, int time_out)
 {
-    WSAPOLLFD poll_socket = {};
+    pollfd poll_socket = {};
     poll_socket.fd = socket;
     poll_socket.events = option;
-    int result = WSAPoll(&poll_socket, 1, time_out);
+    int result = poll(&poll_socket, 1, time_out);
     if (poll_socket.revents & POLLHUP)
     {
         return POLLHUP;
     }
     else if (result == SOCKET_ERROR)
     {
-        std::cout << "WSAPoll: " << WSAGetLastError() << std::endl;
+        std::cout << "Poll: " << errno << std::endl;
         return SOCKET_ERROR;
     }
     return result;
@@ -27,9 +46,11 @@ int SN::Socket::Listen()
 {
     if (listen(m_socket, 3) != 0)
     {
-        printf("Listen failed with error: %d\n", WSAGetLastError());
+        printf("Listen failed with error: %d\n", errno);
         this->CloseSocket();
+        #ifdef MSWINDOWS
         this->CleanUp();
+        #endif
         return 1;
     }
     return 0;
@@ -41,9 +62,11 @@ std::pair<int, SOCKET> SN::Socket::Accept()
     connected_socket = accept(m_socket, NULL, NULL);
     if (connected_socket == INVALID_SOCKET)
     {
-        printf("accept failed: %d\n", WSAGetLastError());
+        printf("accept failed: %d\n", errno);
         this->CloseSocket();
+        #ifdef MSWINDOWS
         this->CleanUp();
+        #endif
         return {1, INVALID_SOCKET};
     }
     return {0, connected_socket};
@@ -58,7 +81,7 @@ int SN::Socket::CreateSocket()
 
     if (new_socket == INVALID_SOCKET)
     {
-        std::cout << "socket() failed and WSAGetLastError() returned: " << WSAGetLastError() << std::endl;
+        std::cout << "socket() failed and GetLastError() returned: " << errno << std::endl;
         freeaddrinfo(m_address_info);
         return 1;
     }
@@ -74,7 +97,7 @@ int SN::Socket::BindSocket()
 
     if (result != 0)
     {
-        std::cout << "bind() failed and WSAGetLastError() returned: " << WSAGetLastError() << std::endl;
+        std::cout << "bind() failed and WSAGetLastError() returned: " << errno << std::endl;
         return 1;
     }
     return 0;
@@ -83,10 +106,11 @@ int SN::Socket::BindSocket()
 int SN::Socket::EnableNonBlocking()
 {
     u_long mode = 1;
-    int result = ioctlsocket(m_socket, FIONBIO, &mode);
+    int result = ioctl(this->m_socket, FIONBIO, &mode);
+
     if (result != 0)
     {
-        std::cout << "ioctlsocket failed with error: " << result << std::endl;
+        std::cout << "EnableNonBlocking failed with error: " << result << std::endl;
     }
     return result;
 }
@@ -107,7 +131,7 @@ int SN::Socket::Connect(const char *target_name_or_ip, const char *target_servic
     {
         if (connect(m_socket, addrinfo->ai_addr, addrinfo->ai_addrlen) == SOCKET_ERROR)
         {
-            printf("connect failed: %d\n", WSAGetLastError());
+            printf("connect failed: %d\n", errno);
             return SOCKET_ERROR;
         }
     }
@@ -126,7 +150,7 @@ addrinfo *SN::Socket::GetAddressInfo(const char *name_or_ip, const char *service
     int result = getaddrinfo(name_or_ip, service_or_port, &hints, &address_info);
     if (result != 0)
     {
-        std::cout << "getaddrinfo() failed and returned: " << result << " WSAGetLastError() returned: " << WSAGetLastError() << std::endl;
+        std::cout << "getaddrinfo() failed and returned: " << result << " WSAGetLastError() returned: " << errno << std::endl;
         return nullptr;
     }
     return address_info;
@@ -137,7 +161,7 @@ int SN::Socket::Send(SOCKET sender, const char *message)
     int result = send(sender, message, strlen(message) + 1, 0);
     if (result == SOCKET_ERROR)
     {
-        printf("send failed: %d\n", WSAGetLastError());
+        printf("send failed: %d\n", errno);
     }
     return result;
 }
@@ -149,7 +173,7 @@ std::pair<int, std::string> SN::Socket::Recive(SOCKET sender)
 
     if (result == SOCKET_ERROR)
     {
-        printf("recv failed: %d\n", WSAGetLastError());
+        printf("recv failed: %d\n", errno);
     }
 
     return {result, std::string(buff)};
@@ -164,7 +188,7 @@ void SN::Socket::ReciveLoop()
         result = recv(this->m_socket, buff, 100, 0);
         if (result == SOCKET_ERROR)
         {
-            printf("recv failed: %d\n", WSAGetLastError());
+            printf("recv failed: %d\n", errno);
         }
         std::cout << std::endl
                   << buff << std::endl;
@@ -188,11 +212,14 @@ void SN::Socket::SendLoop()
 
 void SN::Socket::CloseSocket()
 {
-    closesocket(this->m_socket);
+    close(this->m_socket);
 }
 
-bool SN::Socket::InitWinSock()
+bool SN::Socket::Init()
 {
+    #ifndef MSWINDOWS
+    return true;
+    #else
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result == 0)
@@ -215,9 +242,14 @@ bool SN::Socket::InitWinSock()
         printf("The Winsock 2.2 dll was found okay\n");
         return true;
     }
+    #endif
 }
 
 void SN::Socket::CleanUp()
 {
+    #ifndef MSWINDOWS
+    return;
+    #else
     WSACleanup();
+    #endif
 }
