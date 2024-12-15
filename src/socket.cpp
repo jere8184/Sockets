@@ -1,6 +1,6 @@
 
 
-#ifndef MSWINDOWS
+#ifndef _WIN32
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -8,7 +8,7 @@
 #else
 
 #define fcntl ioctlsocket
-#define poll WSAPOLL
+#define poll WSAPoll
 #define pollfd WSAPOLLFD
 #define ioctl ioctlsocket
 #define errno WSAGetLastError()
@@ -48,7 +48,7 @@ int SN::Socket::Listen()
     {
         printf("Listen failed with error: %d\n", errno);
         this->CloseSocket();
-        #ifdef MSWINDOWS
+        #ifdef _WIN32
         this->CleanUp();
         #endif
         return 1;
@@ -64,7 +64,7 @@ std::pair<int, SOCKET> SN::Socket::Accept()
     {
         printf("accept failed: %d\n", errno);
         this->CloseSocket();
-        #ifdef MSWINDOWS
+        #ifdef _WIN32
         this->CleanUp();
         #endif
         return {1, INVALID_SOCKET};
@@ -217,7 +217,7 @@ void SN::Socket::CloseSocket()
 
 bool SN::Socket::Init()
 {
-    #ifndef MSWINDOWS
+    #ifndef _WIN32
     return true;
     #else
     WSADATA wsaData;
@@ -247,7 +247,7 @@ bool SN::Socket::Init()
 
 void SN::Socket::CleanUp()
 {
-    #ifndef MSWINDOWS
+    #ifndef _WIN32
     return;
     #else
     WSACleanup();

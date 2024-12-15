@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 
 void SN::Server::RegisterUsers()
 {
@@ -107,7 +106,7 @@ int main(int argc, const char **argv)
 
         for (int count = 0; count < 200; count++)
         {
-            sleep(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             std::cout << "waiting for connection: " << count << std::endl;
             if (!server.m_users.empty())
             {
