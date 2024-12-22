@@ -7,4 +7,3 @@ server \<host name> \<Port Number>
 
 then run as many client process as you want i.e,
 client \<host name of server> \<Port Number of server>
-t
