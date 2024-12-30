@@ -1,4 +1,5 @@
 
+#pragma once
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -18,7 +19,6 @@ const int SOCKET_ERROR = -1;
 #include <ws2tcpip.h>
 
 #endif
-
 
 #include <string>
 #include <vector>

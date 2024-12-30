@@ -1,3 +1,6 @@
+
+#pragma once
+
 #include <set>
 #include <utility>
 #include <string>
@@ -14,11 +17,9 @@ namespace SN
         Server(const char *name_or_ip = nullptr, const char *service_or_port = "888");
         void BroadcastMessage(std::string sender, std::string message);
         void ReciveFromUsersLoop();
-        const std::set<std::pair<SOCKET, std::string>>& GetUsers() { return this->users; }
-
+        const std::set<std::pair<SOCKET, std::string>> &GetUsers() { return this->users; }
 
     private:
         std::set<std::pair<SOCKET, std::string>> users;
-
     };
 }
