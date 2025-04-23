@@ -1,5 +1,7 @@
 
-#pragma once
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
+
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -53,3 +55,6 @@ namespace SN
         addrinfo *address_info;
     };
 };
+
+
+#endif

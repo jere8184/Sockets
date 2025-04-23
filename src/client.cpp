@@ -18,7 +18,7 @@ void signalHandler(int signum)
 
 int main(int argc, const char **argv)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
         std::cerr << "client: expects two arguments (server hostname/IP and sever port number)";
     }

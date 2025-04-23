@@ -1,5 +1,6 @@
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
-#pragma once
 
 #include <set>
 #include <utility>
@@ -23,3 +24,5 @@ namespace SN
         std::set<std::pair<SOCKET, std::string>> users;
     };
 }
+
+#endif
